@@ -51,6 +51,7 @@ void UpdateControl()
   // Update FSM
   
   u1 =3;
+  u2 = -3;
 }
 
 void UpdateActuators(){
