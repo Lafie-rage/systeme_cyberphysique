@@ -1,4 +1,5 @@
 #include "MeMegaPi.h"
+#include "Subsystem.h"
 #include <Wire.h>
 #include <TimerFive.h>
 
@@ -11,15 +12,18 @@
 
 #define DISTANCE_1_WHEEL BELT_PITCH * NTEETH / 360 // Distance equivalent to an entire wheel turn.
 
+
 volatile float angle = 0;  //actual heading in deg
 volatile float speed1 = 0; //actual speed in mm/s
 volatile float speed2 = 0;
-volatile float ref1 = 0; //actual references from serial
-volatile float ref2 = 0;
 volatile float pos1 = 0;
 volatile float pos2 = 0;
+volatile float ref1 = 0; //actual references from serial
+volatile float ref2 = 0;
 float u1 = 0; // control signals
 float u2 = 0;
+float temp_u1 = 0;
+float temp_u2 = 0;
 volatile long compTime = 0; // actual computation time of the critical loop
 volatile short overrun = 0;
 
@@ -49,21 +53,35 @@ void UpdateSensors(){
   pos2 = Encoder_2.getCurPos() * DISTANCE_1_WHEEL;
   
   speed1 = Encoder_1.getCurrentSpeed()*RPM_2_MMS; // compute the speed in mm/s
-  speed2 = Encoder_2.getCurrentSpeed()*RPM_2_MMS;  
+  speed2 = Encoder_2.getCurrentSpeed()*RPM_2_MMS; 
 }
+
+
 
 void UpdateControl()
 {
   // Update FSM
+  // Calculate voltage for motor 1
+  Subsystem_U.position = pos1;
+  Subsystem_U.vitesse_souhaitee = 150;
+  Subsystem_step();
+
+  temp_u1 = Subsystem_Y.tension_commandee;
   
-  u1 =3;
-  u2 = -3;
+  // Calculate voltage for motor 2
+  Subsystem_U.position = pos2;
+  Subsystem_U.vitesse_souhaitee = 150;
+  Subsystem_step();
+  temp_u2 = -Subsystem_Y.tension_commandee;
+
+  u1 = temp_u1;
+  u2 = temp_u2;
 }
 
 void UpdateActuators(){
   setMotorsVoltage(u1,u2); // set the voltages
 }
-/*
+/*=================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================
 * routine that is called every 5ms by the timer 5
 */
 void Timer5ISR(){
@@ -151,6 +169,9 @@ void setup()
   setupMotors();
   Timer5.initialize(5000);
   Timer5.attachInterrupt(Timer5ISR);  
+
+  // Setup for observer part
+  Subsystem_initialize();
 }
 
 
@@ -169,29 +190,42 @@ void loop()
   interrupts();
   
   //Serial.read();
-  Serial.print(" compTime: ");
-  Serial.print(compTimeCopy);
+//  Serial.print(" compTime: ");
+//  Serial.print(compTimeCopy);
+//
+//  Serial.print(" overrun: ");
+//  Serial.print(overrun);
+//  
+//  Serial.print(" speed1: ");
+//  Serial.print(speed1Copy);
+//  
+//  Serial.print(" speed2: ");
+//  Serial.print(speed2Copy);
+//
+//  Serial.print(" pos1: ");
+//  Serial.print(pos1);
+//
+//  Serial.print(" pos2: ");
+//  Serial.print(pos2);
 
-  Serial.print(" overrun: ");
-  Serial.print(overrun);
-  
-  Serial.print(" speed1: ");
-  Serial.print(speed1Copy);
-  
-  Serial.print(" speed2: ");
-  Serial.print(speed2Copy);
-  
-  Serial.print(" angle: ");
-  Serial.print(angleCopy);
+ Serial.print(" temp_u1: ");
+ Serial.print(temp_u1);
 
-  Serial.print(" ref1: ");
-  Serial.print(ref1);
+  Serial.print(" temp_u2: ");
+  Serial.print(temp_u2);
 
-  Serial.print(" ref2: ");
-  Serial.print(ref2);
+//  
+//  Serial.print(" angle: ");
+//  Serial.print(angleCopy);
+//
+//  Serial.print(" ref1: ");
+//  Serial.print(ref1);
+//
+//  Serial.print(" ref2: ");
+//  Serial.print(ref2);
   
   
-  Serial.println();
+ Serial.println();
 
   if(Serial.available()){
     lastRef1 = Serial.parseFloat();
