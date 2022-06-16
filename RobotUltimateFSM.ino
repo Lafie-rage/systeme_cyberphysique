@@ -9,12 +9,15 @@
 #define VOLTS_2_PWM 255.0/12.0 // conversion voltage to pwm [-255 255]
 #define MAX_VOLTAGE 9 // max allowed voltage
 
+#define DISTANCE_1_WHEEL BELT_PITCH * NTEETH / 360 // Distance equivalent to an entire wheel turn.
 
 volatile float angle = 0;  //actual heading in deg
 volatile float speed1 = 0; //actual speed in mm/s
 volatile float speed2 = 0;
 volatile float ref1 = 0; //actual references from serial
 volatile float ref2 = 0;
+volatile float pos1 = 0;
+volatile float pos2 = 0;
 float u1 = 0; // control signals
 float u2 = 0;
 volatile long compTime = 0; // actual computation time of the critical loop
@@ -41,6 +44,9 @@ void UpdateSensors(){
   
   Encoder_1.loop(); // update the encoders state
   Encoder_2.loop();
+
+  pos1 = Encoder_1.getCurPos() * DISTANCE_1_WHEEL;
+  pos2 = Encoder_2.getCurPos() * DISTANCE_1_WHEEL;
   
   speed1 = Encoder_1.getCurrentSpeed()*RPM_2_MMS; // compute the speed in mm/s
   speed2 = Encoder_2.getCurrentSpeed()*RPM_2_MMS;  
